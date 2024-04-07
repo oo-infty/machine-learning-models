@@ -3,10 +3,10 @@ import torch
 from data.transform import ImageTrainingTransform, DataTransform
 from data.loader import loader, voc_detection_dataset
 from data.plot import plot_output
-from model.context import YoloContext
+from model.context import BackboneType, YoloContext
 from model.session import PredictionSession, TrainingSession
 
-MODEL_PATH = "output/yolo-v1/yolo-inception.pth"
+MODEL_PATH = "output/yolo-v1/yolo-resnet.pth"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SIZE = 7
@@ -15,14 +15,14 @@ CLASSES = 20
 CONFIDENCE_THRESHOLD = 0.5
 IOU_THRESHOLD = 0.5
 
-EPOCH = 100
-LEARNING_RATE = 1e-3
-BATCH_SIZE = 64
+EPOCH = 200
+LEARNING_RATE = 5e-4
+BATCH_SIZE = 96
 WEIGHTS = {"coord": 5, "obj": 1, "noobj": 0.5}
 
 def main():
-    # train()
-    predict()
+    train()
+    # predict()
 
 def train():
     context = YoloContext(
@@ -31,7 +31,8 @@ def train():
         BOUNDING_BOX,
         CLASSES,
         CONFIDENCE_THRESHOLD,
-        IOU_THRESHOLD
+        IOU_THRESHOLD,
+        BackboneType.RESNET,
     )
 
     session = TrainingSession(

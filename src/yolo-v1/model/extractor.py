@@ -1,6 +1,8 @@
+from torch import Tensor
 from torch.nn import Module, Sequential
 from torch.nn import Conv2d, BatchNorm2d, LeakyReLU
 from torchvision.models import GoogLeNet_Weights, googlenet
+from torchvision.models import ResNet50_Weights, resnet50
 
 
 class ReductionConv2d(Module):
@@ -31,8 +33,7 @@ class YoloInceptionExtractor(Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-    def forward(self, tensor):
-        # All heights and widths below actually need to be doubled
+    def forward(self, tensor: Tensor) -> Tensor:
         tensor = self.backbone.conv1(tensor)
         # (64, 224, 224)
         tensor = self.backbone.maxpool1(tensor)
@@ -68,6 +69,29 @@ class YoloInceptionExtractor(Module):
         return tensor
 
 
+class YoloResNetExtractor(Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.backbone = resnet50(weights=ResNet50_Weights.DEFAULT)
+        self.conv = ReductionConv2d(2048, 1024, 3)
+
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+    def forward(self, tensor: Tensor) -> Tensor:
+        tensor = self.backbone.conv1(tensor)
+        tensor = self.backbone.bn1(tensor)
+        tensor = self.backbone.relu(tensor)
+        tensor = self.backbone.maxpool(tensor)
+        tensor = self.backbone.layer1(tensor)
+        tensor = self.backbone.layer2(tensor)
+        tensor = self.backbone.layer3(tensor)
+        tensor = self.backbone.layer4(tensor)
+        tensor = self.conv(tensor)
+        return tensor
+
+
 class YoloExtractor(Module):
     def __init__(self):
         super().__init__()
@@ -87,7 +111,7 @@ class YoloExtractor(Module):
             # (1024, 7, 7)
         )
 
-    def forward(self, tensor):
+    def forward(self, tensor: Tensor) -> Tensor:
         return self.layers(tensor)
 
 

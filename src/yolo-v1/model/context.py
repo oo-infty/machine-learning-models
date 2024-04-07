@@ -1,10 +1,17 @@
+from enum import Enum
+
 import torch
 import torchvision
 from torch import Tensor
-from torch.nn import Sequential
+from torch.nn import Sequential, Module
 
-from model.extractor import YoloInceptionExtractor, YoloExtractor
+from model.extractor import YoloInceptionExtractor, YoloExtractor, YoloResNetExtractor
 from model.detector import YoloDetector 
+
+
+class BackboneType(Enum):
+    INCEPTION = 0
+    RESNET = 1
 
 
 class YoloContext:
@@ -15,7 +22,8 @@ class YoloContext:
         bounding_box: int,
         classes: int,
         confidence_threshold: float,
-        iou_threshold: float
+        iou_threshold: float,
+        backbone: BackboneType,
     ) -> None:
         self.device = device
         self.size = size
@@ -40,8 +48,16 @@ class YoloContext:
             .repeat_interleave(self.bounding_box, dim=2) \
             .to(device)
 
+        backbone_net: Module
+
+        match backbone:
+            case BackboneType.INCEPTION:
+                backbone_net = YoloInceptionExtractor()
+            case BackboneType.RESNET:
+                backbone_net = YoloResNetExtractor()
+
         self.network = Sequential(
-            YoloInceptionExtractor(),
+            backbone_net,
             YoloExtractor(),
             YoloDetector(size, bounding_box, classes)
         ).to(device)
