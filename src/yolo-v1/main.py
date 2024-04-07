@@ -21,8 +21,8 @@ BATCH_SIZE = 96
 WEIGHTS = {"coord": 5, "obj": 1, "noobj": 0.5}
 
 def main():
-    train()
-    # predict()
+    # train()
+    predict()
 
 def train():
     context = YoloContext(
@@ -50,8 +50,8 @@ def train():
 
 def predict():
     context = torch.load(MODEL_PATH)
-    context.confidence_threshold = 0.1
-    context.iou_threshold = 0.2
+    context.confidence_threshold = 0.2
+    context.iou_threshold = 0.5
 
     session = PredictionSession(
         DEVICE,

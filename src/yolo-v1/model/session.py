@@ -32,16 +32,17 @@ class TrainingSession:
 
     def run(self) -> None:
         optimizer = SGD(self.context.network.parameters(), self.learning_rate, 0.9)
-        scheduler = StepLR(optimizer, 2, 0.95)
+        scheduler = StepLR(optimizer, 3, 0.95)
 
         for i in range(1, self.epoch + 1):
             print(f"Epoch #{i}")
             self.training_epoch(optimizer, scheduler)
-            self.validation_epoch()
             scheduler.step()
 
             if i % 10 == 0:
                 self.save(self.model_path)
+
+        self.validation_epoch()
 
     def training_epoch(self, optimizer: Optimizer, scheduler: StepLR) -> None:
         self.context.network.train()

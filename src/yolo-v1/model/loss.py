@@ -26,10 +26,10 @@ class YoloLoss(Module):
         mse_loss = MSELoss(reduction="sum")
         loss = Tensor([0.]).to(self.device)
 
-        output_target_iou = torchvision.ops.box_iou(
+        output_target_iou = self.iou(
             converted_output_bounding_box.reshape(-1, 4),
             converted_target_bounding_box.reshape(-1, 4)
-        ).diag().reshape_as(output_confidence)
+        ).reshape_as(output_confidence)
 
         shape = converted_output_bounding_box.shape
         bounding_box_id = torch \
@@ -68,3 +68,27 @@ class YoloLoss(Module):
         )
         
         return loss / output_classes.shape[0]
+
+    def area(self, x1y1: Tensor, x2y2: Tensor, check: bool = False) -> Tensor:
+        """Calculate the area of each box. If chech is enabled and box is not
+        valid, returns 0
+        """
+
+        wh = x2y2 - x1y1
+
+        if check:
+            wh[wh < 0] = 0
+
+        return wh[:, 0] * wh[:, 1]
+
+    def iou(self, boxes1: Tensor, boxes2: Tensor) -> Tensor:
+        """Calculate IoUs of pairs of boxes from two sets
+        """
+
+        x1y1 = torch.max(boxes1[:, 0:2], boxes2[:, 0:2])
+        x2y2 = torch.min(boxes1[:, 2:4], boxes2[:, 2:4])
+        area1 = self.area(boxes1[:, 0:2], boxes1[:, 2:4])
+        area2 = self.area(boxes2[:, 0:2], boxes2[:, 2:4])
+        intersection = self.area(x1y1, x2y2, True)
+        union = area1 + area2 - intersection
+        return intersection / union
