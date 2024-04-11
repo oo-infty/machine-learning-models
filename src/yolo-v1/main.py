@@ -20,9 +20,11 @@ LEARNING_RATE = 5e-4
 BATCH_SIZE = 96
 WEIGHTS = {"coord": 5, "obj": 1, "noobj": 0.5}
 
+
 def main():
     # train()
     predict()
+
 
 def train():
     context = YoloContext(
@@ -47,6 +49,7 @@ def train():
     )
 
     session.run()
+
 
 def predict():
     context = torch.load(MODEL_PATH)
@@ -74,6 +77,7 @@ def predict():
     print("output =", output[0])
     print("target =", raw_target)
     plot_output(raw_img, output[0])
+
 
 if __name__ == "__main__":
     main()

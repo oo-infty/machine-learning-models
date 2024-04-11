@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import StepLR
 from model.context import YoloContext
 from model.loss import YoloLoss
 
+
 class TrainingSession:
     def __init__(
         self,
@@ -64,8 +65,10 @@ class TrainingSession:
             if batch % 10 == 0:
                 current = (batch + 1) * batch_size
                 current_lr = optimizer.state_dict()["param_groups"][0]["lr"]
-                print(f"Avg Loss: {total_loss / current:>7f}, Iteration: {current:>5d}/{length:>5d}, Learning Rate: {current_lr}")
-            
+                print(
+                    f"Avg Loss: {total_loss / current:>7f}, Iteration: {current:>5d}/{length:>5d}, Learning Rate: {current_lr}"
+                )
+
         print(f"Training Loss: {total_loss / length}")
 
     def validation_epoch(self) -> None:
@@ -81,18 +84,19 @@ class TrainingSession:
                 outputs = self.context.network(samples)
                 loss = self.criterion(outputs, targets)
                 total_loss += loss.item() * batch_size
-            
+
         print(f"Validation Loss: {total_loss / length}")
 
     def save(self, path: str):
         torch.save(self.context, path)
         print(f"Save model to {path}")
-        
+
 
 PredictionResult = namedtuple(
     "PredictionResult",
     ["bounding_box", "classes", "confidence"],
 )
+
 
 class PredictionSession:
     def __init__(
@@ -125,10 +129,12 @@ class PredictionSession:
         predition = []
 
         for i in range(batch_num):
-            predition.append(PredictionResult(
-                res[0][batch_id == i], # Bounding boxes
-                res[1][batch_id == i], # Classes
-                res[2][batch_id == i], # Class confidence
-            ))
+            predition.append(
+                PredictionResult(
+                    res[0][batch_id == i],  # Bounding boxes
+                    res[1][batch_id == i],  # Classes
+                    res[2][batch_id == i],  # Class confidence
+                )
+            )
 
         return predition

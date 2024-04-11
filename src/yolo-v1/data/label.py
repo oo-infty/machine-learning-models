@@ -44,8 +44,10 @@ VALUE_MAPPING = {
     19: "tvmonitor",
 }
 
+
 def label_to_value(label: str) -> int:
-	return LABEL_MAPPING[label]
+    return LABEL_MAPPING[label]
+
 
 def value_to_label(value: int) -> str:
-	return VALUE_MAPPING[value]
+    return VALUE_MAPPING[value]

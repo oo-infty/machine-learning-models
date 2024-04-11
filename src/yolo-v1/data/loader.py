@@ -3,7 +3,14 @@ from typing import Optional, Callable, Any
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import VOCDetection
 
-from data.transform import DataTransform, ImagePredictionTransform, ImageTrainingTransform, ParseTarget, ToTargetTensor
+from data.transform import (
+    DataTransform,
+    ImagePredictionTransform,
+    ImageTrainingTransform,
+    ParseTarget,
+    ToTargetTensor,
+)
+
 
 class CustomVOCDetection(Dataset):
     def __init__(
@@ -20,12 +27,10 @@ class CustomVOCDetection(Dataset):
     ) -> None:
         super().__init__()
         self.inner_dataset = VOCDetection(
-            root,
-            image_set=image_set,
-            target_transform=ParseTarget()
+            root, image_set=image_set, target_transform=ParseTarget()
         )
 
-        self.image_transforms= image_transforms
+        self.image_transforms = image_transforms
         self.data_transforms = data_transforms
 
         if enable_target_transform:
@@ -67,6 +72,7 @@ class CustomVOCDetection(Dataset):
 
         return new_img, new_target, img, target
 
+
 def voc_detection_dataset(
     image_set: str,
     image_transforms: Optional[Callable] = None,
@@ -88,6 +94,7 @@ def voc_detection_dataset(
         enable_target_transform=enable_target_transform,
     )
 
+
 def loader(
     image_set: str,
     batch_size: int,
@@ -96,7 +103,9 @@ def loader(
     classes: int,
     enable_target_transform: bool = True,
 ) -> DataLoader:
-    image_transform = ImageTrainingTransform() if image_set == "train" else ImagePredictionTransform()
+    image_transform = (
+        ImageTrainingTransform() if image_set == "train" else ImagePredictionTransform()
+    )
     dataset = voc_detection_dataset(
         image_set,
         image_transform,

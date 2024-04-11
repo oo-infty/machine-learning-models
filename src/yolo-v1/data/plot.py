@@ -5,12 +5,16 @@ import matplotlib.pyplot as plt
 from model.session import PredictionResult
 import data.label
 
-def plot_img(img: Tensor, bounding_box: list[list[int]] = [], labels: list[str] = []) -> None:
+
+def plot_img(
+    img: Tensor, bounding_box: list[list[int]] = [], labels: list[str] = []
+) -> None:
     img = draw_bounding_boxes(img, Tensor(bounding_box), labels=labels, width=3)
     fig, ax = plt.subplots()
     ax.axis(False)
     ax.imshow(img.permute(1, 2, 0).squeeze())
     plt.show()
+
 
 def plot_output(img: Tensor, output: PredictionResult) -> None:
     labels = []

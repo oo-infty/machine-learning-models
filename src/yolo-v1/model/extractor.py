@@ -26,8 +26,7 @@ class YoloInceptionExtractor(Module):
         super().__init__()
 
         self.backbone = googlenet(
-            transform_input=False,
-            weights=GoogLeNet_Weights.DEFAULT
+            transform_input=False, weights=GoogLeNet_Weights.DEFAULT
         )
 
         for param in self.backbone.parameters():
@@ -113,5 +112,3 @@ class YoloExtractor(Module):
 
     def forward(self, tensor: Tensor) -> Tensor:
         return self.layers(tensor)
-
-
