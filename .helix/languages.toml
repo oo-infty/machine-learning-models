@@ -1,6 +1,7 @@
 [[language]]
 name = "python"
 language-servers = [ "pyright", "ruff" ]
+indent = { tab-width = 4, unit = "    " }
 
 [language-server.pyright.config.python.analysis]
 typeCheckingMode = "basic"
