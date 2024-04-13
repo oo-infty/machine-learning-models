@@ -110,19 +110,19 @@ class YoloDetector(Module):
 
     Args:
         channels (int): channels of the input tensor
-        boxes (int): the number of boxes of each grid
-        fields (int): the number of fields of each box
+        num_box (int): the number of boxes of each grid
+        num_class (int): the number of classes
     """
 
-    def __init__(self, channels: int, boxes: int, fields: int) -> None:
+    def __init__(self, channels: int, num_box: int, num_class: int) -> None:
         super().__init__()
 
-        self.boxes = boxes
-        self.fields = fields
+        self.num_box = num_box
+        self.num_class = num_class
 
         self.layers = Sequential(
             YoloBlock(channels, channels, 3),
-            Conv2d(channels, boxes * fields, 1),
+            Conv2d(channels, num_box * (5 + num_class), 1),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -136,8 +136,13 @@ class YoloDetector(Module):
         """
 
         res = (
-            self.layers(x).permute((0, 2, 3, 1)).unflatten(3, (self.boxes, self.fields))
+            self.layers(x).permute((0, 2, 3, 1)).unflatten(3, (self.num_box, 5 + self.num_class))
         )
 
         res[:, :, :, :, 4:] = torch.sigmoid(res[:, :, :, :, 4:])
+        # The result's shape is (batch, size, size, boxes, fields), where the last
+        # component consists of three three parts:
+        # - [0:4]: bounding boxes's position and size, represented as (tx, ty, tw, th)
+        # - [4:5]: confidence
+        # - [5:]: probabilities of classes
         return res

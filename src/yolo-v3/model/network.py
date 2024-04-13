@@ -18,11 +18,11 @@ class YoloNetwork(Module):
     """The main YOLO v3 network structure
 
     Args:
-        boxes (int): the number of boxes of each grid
-        fields (int): the number of fields of each box
+        num_box (int): the number of boxes of each grid
+        num_class (int): the number of classes
     """
 
-    def __init__(self, boxes: int, fields: int) -> None:
+    def __init__(self, num_box: int, num_class: int) -> None:
         super().__init__()
 
         self.backbone = ResNetBackbone()
@@ -31,9 +31,9 @@ class YoloNetwork(Module):
         self.stack3 = YoloBlockStack(512, 512, 3, 5)
         self.upsample1 = Sequential(YoloBlock(1024, 512, 3), Upsample(scale_factor=2))
         self.upsample2 = Sequential(YoloBlock(1024, 256, 3), Upsample(scale_factor=2))
-        self.detector1 = YoloDetector(1024, boxes, fields)
-        self.detector2 = YoloDetector(1024, boxes, fields)
-        self.detector3 = YoloDetector(512, boxes, fields)
+        self.detector1 = YoloDetector(1024, num_box, 5 + num_class)
+        self.detector2 = YoloDetector(1024, num_box, 5 + num_class)
+        self.detector3 = YoloDetector(512, num_box, 5 + num_class)
 
     def forward(self, x: Tensor) -> YoloNetworkResult:
         """Get the detection result
@@ -74,4 +74,8 @@ class YoloNetwork(Module):
         res_large = self.detector3(output)
         # Output shape (batch, boxes, fields, 52, 52)
 
-        return YoloNetworkResult(res_small, res_intermediate, res_large)
+        return YoloNetworkResult(
+            small=res_small,
+            intermediate=res_intermediate,
+            large=res_large,
+        )
