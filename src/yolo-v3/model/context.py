@@ -19,6 +19,19 @@ class SplitTensorResult(NamedTuple):
     confidence: Tensor
     classes: Tensor
 
+class ComposedSplitTensorResult(NamedTuple):
+    """Result of YoloContext.split_tensor of all feature maps
+
+    Args:
+        small (SplitTensorResult): result of the small feature map
+        intermediate (SplitTensorResult): result of the intermediate feature map
+        large (SplitTensorResult): result of the large feature map
+    """
+
+    small: SplitTensorResult
+    intermediate: SplitTensorResult
+    large: SplitTensorResult
+
 class YoloContext:
     """An object which stores all essential constants and the network structure, along
     with some relevant helper functions
@@ -29,6 +42,7 @@ class YoloContext:
         num_class (int): the number of classes
         anchor_boxes (Tensor): boxes on which predictions are based
     """
+
     def __init__(
         self,
         device: str,
@@ -59,6 +73,25 @@ class YoloContext:
             boxes=tensor[:, :, :, :, 0:4],
             confidence=tensor[:, :, :, :, 4],
             classes=tensor[:, :, :, :, 5:],
+        )
+
+    def preprocess_output(
+        self,
+        output: YoloNetworkResult,
+    ) -> ComposedSplitTensorResult:
+        """Split the network's output for all feature maps
+        
+        Args:
+            output (YoloNetworkResult): the network's output
+
+        Returns:
+            ComposedSplitTensorResult: preprocessed output
+        """
+
+        return ComposedSplitTensorResult(
+            small=self.split_tensor(output.small),
+            intermediate=self.split_tensor(output.intermediate),
+            large=self.split_tensor(output.large),
         )
 
     def decode_bounding_box(
