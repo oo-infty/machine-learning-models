@@ -8,7 +8,7 @@ from model.network import YoloNetworkResult
 from model.context import SplitTensorResult, YoloContext
 
 
-class LossWeight:
+class LossWeight(NamedTuple):
     """Weights of terms in the loss function
 
     Args:
@@ -20,6 +20,7 @@ class LossWeight:
     coord: float
     obj: float
     noobj: float
+
 
 class YoloLoss(Module):
     """Calculate the loss between model's output and the ground truth
@@ -48,7 +49,7 @@ class YoloLoss(Module):
         target: YoloNetworkResult,
     ) -> Tensor:
         """Calculate loss between input and target
-            
+
         Args:
             input (YoloNetworkResult): input tensors
             target (YoloNetworkResult): ground truth
@@ -58,13 +59,12 @@ class YoloLoss(Module):
         """
 
         i = self.context.preprocess_output(input)
-        t = self.context.preprocess_output(target)
+        t = self.context.preprocess_output(target, encode_box=True)
 
         loss_small = self.forward_impl(i.small, t.small)
         loss_intermediate = self.forward_impl(i.intermediate, t.intermediate)
         loss_large = self.forward_impl(i.large, t.large)
         return loss_small + loss_intermediate + loss_large
-
 
     def forward_impl(
         self,
@@ -91,13 +91,21 @@ class YoloLoss(Module):
         indicator_noobj = target.confidence == 0
 
         # Calculate the loss of bounding box coordination
-        loss += self.weight.coord * mse_func(input.boxes[indicator_obj], target.boxes[indicator_obj])
+        loss += self.weight.coord * mse_func(
+            input.boxes[indicator_obj], target.boxes[indicator_obj]
+        )
 
         # Calculate the loss of confidence
-        loss += self.weight.obj * bce_func(input.confidence[indicator_obj], target.confidence[indicator_obj]) 
-        loss += self.weight.noobj * bce_func(input.confidence[indicator_noobj], target.confidence[indicator_noobj]) 
+        loss += self.weight.obj * bce_func(
+            input.confidence[indicator_obj], target.confidence[indicator_obj]
+        )
+        loss += self.weight.noobj * bce_func(
+            input.confidence[indicator_noobj], target.confidence[indicator_noobj]
+        )
 
         # Calculate the loss of probilities of classes
-        loss += self.weight.obj * bce_func(input.classes[indicator_obj], target.classes[indicator_obj])
+        loss += self.weight.obj * bce_func(
+            input.classes[indicator_obj], target.classes[indicator_obj]
+        )
 
         return loss / batch_size

@@ -19,6 +19,7 @@ class SplitTensorResult(NamedTuple):
     confidence: Tensor
     classes: Tensor
 
+
 class ComposedSplitTensorResult(NamedTuple):
     """Result of YoloContext.split_tensor of all feature maps
 
@@ -31,6 +32,7 @@ class ComposedSplitTensorResult(NamedTuple):
     small: SplitTensorResult
     intermediate: SplitTensorResult
     large: SplitTensorResult
+
 
 class YoloContext:
     """An object which stores all essential constants and the network structure, along
@@ -58,6 +60,48 @@ class YoloContext:
 
         self.network = YoloNetwork(num_box, num_class).to(device)
 
+        self.size = [Tensor([13]).to(device), Tensor([26]).to(device), Tensor([52]).to(device)]
+        self.offset_x = []
+        self.offset_y = []
+
+        for size in self.size:
+            offset_x, offset_y = self.get_offset(device, int(size.item()), num_box)
+            self.offset_x.append(offset_x)
+            self.offset_y.append(offset_y)
+
+    def get_offset(
+        self,
+        device: str,
+        size: int,
+        num_box: int,
+    ) -> tuple[Tensor, Tensor]:
+        """Get vertical and horizontal offsets for grids
+
+        Args:
+            device (str): where to store the tensors
+            size (int): the number of grids in one row
+            num_box (int): the number of boxes of each grid
+
+        Returns:
+            tuple[Tensor, Tensor]: offset tensors for both directions
+        """
+
+        offset_x, offset_y = torch.meshgrid(
+            torch.arange(size),
+            torch.arange(size),
+            indexing="ij",
+        )
+
+        offset_x = (
+            offset_x.reshape(size, size, 1).repeat_interleave(num_box, dim=2).to(device)
+        )
+
+        offset_y = (
+            offset_y.reshape(size, size, 1).repeat_interleave(num_box, dim=2).to(device)
+        )
+
+        return offset_x, offset_y
+
     def split_tensor(self, tensor: Tensor) -> SplitTensorResult:
         """Split the network's output to tensors of bounding boxes, confidence and
         probabilities.
@@ -78,34 +122,59 @@ class YoloContext:
     def preprocess_output(
         self,
         output: YoloNetworkResult,
+        encode_box: bool = False,
     ) -> ComposedSplitTensorResult:
         """Split the network's output for all feature maps
-        
+
         Args:
             output (YoloNetworkResult): the network's output
+            encode_box (bool): whether to convert the box format
 
         Returns:
             ComposedSplitTensorResult: preprocessed output
         """
 
+        res = []
+        res.append(self.split_tensor(output.small))
+        res.append(self.split_tensor(output.intermediate))
+        res.append(self.split_tensor(output.large))
+
+        if encode_box:
+            for i in range(3):
+                boxes = self.encode_bounding_box(
+                    res[i].boxes,
+                    self.offset_x[i],
+                    self.offset_y[i],
+                    self.anchor_boxes[i],
+                    self.size[i],
+                )
+
+                res[i] = SplitTensorResult(
+                    boxes=boxes,
+                    confidence=res[i].confidence,
+                    classes=res[i].classes,
+                )
+
         return ComposedSplitTensorResult(
-            small=self.split_tensor(output.small),
-            intermediate=self.split_tensor(output.intermediate),
-            large=self.split_tensor(output.large),
+            small=res[0],
+            intermediate=res[1],
+            large=res[2],
         )
 
     def decode_bounding_box(
-            self,
-            boxes: Tensor,
-            offset: Tensor,
-            anchor: Tensor,
-            size: Tensor,
-        ) -> Tensor:
+        self,
+        boxes: Tensor,
+        offset_x: Tensor,
+        offset_y: Tensor,
+        anchor: Tensor,
+        size: Tensor,
+    ) -> Tensor:
         """Transform the tensor of boxes in raw format to adjusted anchor boxes
 
         Args:
             boxes (Tensor): boxes in a raw output form
-            offset (Tensor): grid cells' top left corners' offset from the origin
+            offset_x (Tensor): grid cells' top left corners' offset from the origin
+            offset_y (Tensor): grid cells' top left corners' offset from the origin
             anchor (Tensor): anchor boxes
             size (Tensor): size of the corresponding feature map
 
@@ -115,8 +184,8 @@ class YoloContext:
 
         return torch.stack(
             [
-                (torch.sigmoid(boxes[:, :, :, :, 0]) + offset) / size,
-                (torch.sigmoid(boxes[:, :, :, :, 1]) + offset) / size,
+                (torch.sigmoid(boxes[:, :, :, :, 0]) + offset_x) / size,
+                (torch.sigmoid(boxes[:, :, :, :, 1]) + offset_y) / size,
                 torch.exp(boxes[:, :, :, :, 2]) * anchor[:, 0],
                 torch.exp(boxes[:, :, :, :, 3]) * anchor[:, 1],
             ]
@@ -124,7 +193,7 @@ class YoloContext:
 
     def sigmoid_inverse(self, x: Tensor) -> Tensor:
         """Inverse of the sigmoid function
-        
+
         Args:
             x (Tensor): the input tensor
 
@@ -137,15 +206,17 @@ class YoloContext:
     def encode_bounding_box(
         self,
         boxes: Tensor,
-        offset: Tensor,
+        offset_x: Tensor,
+        offset_y: Tensor,
         anchor: Tensor,
         size: Tensor,
     ) -> Tensor:
         """Convert the CXCYWH-styled boxes to raw format
-            
+
         Args:
             boxes (Tensor): CXCYWH-styled boxes, which is relative to the origin
-            offset (Tensor): grid cells' top left corners' offset from the origin
+            offset_x (Tensor): grid cells' top left corners' offset from the origin
+            offset_y (Tensor): grid cells' top left corners' offset from the origin
             anchor (Tensor): anchor boxes
             size (Tensor): size of the corresponding feature map
 
@@ -155,8 +226,8 @@ class YoloContext:
 
         return torch.stack(
             [
-                self.sigmoid_inverse(boxes[:, :, :, :, 0] * size - offset),
-                self.sigmoid_inverse(boxes[:, :, :, :, 1] * size - offset),
+                self.sigmoid_inverse(boxes[:, :, :, :, 0] * size - offset_x),
+                self.sigmoid_inverse(boxes[:, :, :, :, 1] * size - offset_y),
                 torch.log(boxes[:, :, :, :, 2] / anchor[:, 0]),
                 torch.log(boxes[:, :, :, :, 3] / anchor[:, 1]),
             ]
