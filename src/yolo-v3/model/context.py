@@ -60,7 +60,11 @@ class YoloContext:
 
         self.network = YoloNetwork(num_box, num_class).to(device)
 
-        self.size = [Tensor([13]).to(device), Tensor([26]).to(device), Tensor([52]).to(device)]
+        self.size = [
+            Tensor([13]).to(device),
+            Tensor([26]).to(device),
+            Tensor([52]).to(device),
+        ]
         self.offset_x = []
         self.offset_y = []
 
@@ -145,7 +149,7 @@ class YoloContext:
                     res[i].boxes,
                     self.offset_x[i],
                     self.offset_y[i],
-                    self.anchor_boxes[i],
+                    self.anchor_boxes[3 * i : 3 * (i + 1)],
                     self.size[i],
                 )
 

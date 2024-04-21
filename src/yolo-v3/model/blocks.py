@@ -136,7 +136,9 @@ class YoloDetector(Module):
         """
 
         res = (
-            self.layers(x).permute((0, 2, 3, 1)).unflatten(3, (self.num_box, 5 + self.num_class))
+            self.layers(x)
+            .permute((0, 2, 3, 1))
+            .unflatten(3, (self.num_box, 5 + self.num_class))
         )
 
         res[:, :, :, :, 4:] = torch.sigmoid(res[:, :, :, :, 4:])
