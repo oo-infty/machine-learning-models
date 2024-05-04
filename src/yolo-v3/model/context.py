@@ -42,7 +42,6 @@ class YoloContext:
         device (str): where to run the model ("gpu", e.g.)
         num_box (int): the number of boxes of each grid
         num_class (int): the number of classes
-        anchor_boxes (Tensor): boxes on which predictions are based
     """
 
     def __init__(
@@ -50,13 +49,12 @@ class YoloContext:
         device: str,
         num_box: int,
         num_class: int,
-        anchor_boxes: Tensor,
     ) -> None:
         self.device = device
 
         self.num_box = num_box
         self.num_class = num_class
-        self.anchor_boxes = anchor_boxes
+        self.anchor_boxes: Tensor | None = None
 
         self.network = YoloNetwork(num_box, num_class).to(device)
 
@@ -73,6 +71,15 @@ class YoloContext:
             self.offset_x.append(offset_x)
             self.offset_y.append(offset_y)
 
+    def set_anchor_boxes(self, anchor_boxes: Tensor) -> None:
+        """Set prior anchor boxes
+
+        Args:
+            anchor_boxes (Tensor): boxes on which predictions are based
+        """
+
+        self.anchor_boxes = anchor_boxes
+        
     def get_offset(
         self,
         device: str,
@@ -142,6 +149,9 @@ class YoloContext:
         res.append(self.split_tensor(output.small))
         res.append(self.split_tensor(output.intermediate))
         res.append(self.split_tensor(output.large))
+
+        if self.anchor_boxes is None:
+            raise ValueError("anchor_boxes is None")
 
         if encode_box:
             for i in range(3):
