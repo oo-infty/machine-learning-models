@@ -60,7 +60,7 @@ class ImageTrainingTransform(Transform):
                 RandomPhotometricDistort(p=1),
                 RandomHorizontalFlip(),
                 RandomResizedCrop((416, 416)),
-                SanitizeBoundingBoxes(),
+                SanitizeBoundingBoxes(labels_getter=lambda d: d[1]["boxes"]),
             ]
         )
 
