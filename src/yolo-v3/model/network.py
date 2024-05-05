@@ -25,15 +25,15 @@ class YoloNetwork(Module):
     def __init__(self, num_box: int, num_class: int) -> None:
         super().__init__()
 
-        self.backbone = ResNetBackbone()
+        self.backbone = ResNetBackbone().cuda()
         self.stack1 = YoloBlockStack(1024, 1024, 3, 5)
         self.stack2 = YoloBlockStack(1024, 1024, 3, 5)
         self.stack3 = YoloBlockStack(512, 512, 3, 5)
         self.upsample1 = Sequential(YoloBlock(1024, 512, 3), Upsample(scale_factor=2))
         self.upsample2 = Sequential(YoloBlock(1024, 256, 3), Upsample(scale_factor=2))
-        self.detector1 = YoloDetector(1024, num_box, 5 + num_class)
-        self.detector2 = YoloDetector(1024, num_box, 5 + num_class)
-        self.detector3 = YoloDetector(512, num_box, 5 + num_class)
+        self.detector1 = YoloDetector(1024, num_box, num_class)
+        self.detector2 = YoloDetector(1024, num_box, num_class)
+        self.detector3 = YoloDetector(512, num_box, num_class)
 
     def forward(self, x: Tensor) -> YoloNetworkResult:
         """Get the detection result

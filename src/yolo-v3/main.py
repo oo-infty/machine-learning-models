@@ -9,8 +9,8 @@ ctx = YoloContext(
     20,
 )
 
-training_loader = loader("train", 64)
-validation_loader = loader("trainval", 2)
+training_loader = loader("train", 32)
+validation_loader = loader("trainval", 32)
 
 session = TrainingSession(
     "cuda",
@@ -19,10 +19,8 @@ session = TrainingSession(
     training_loader,
     validation_loader,
     2,
-    1e-3,
+    1e-5,
     LossWeight(5, 1, 0.1),
 )
 
-kmeans = session.setup_cluster()
-print(kmeans.cluster.center)
-print(kmeans.id_mapping)
+session.run()

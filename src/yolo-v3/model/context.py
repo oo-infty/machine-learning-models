@@ -68,8 +68,8 @@ class YoloContext:
 
         for size in self.size:
             offset_x, offset_y = self.get_offset(device, int(size.item()), num_box)
-            self.offset_x.append(offset_x)
-            self.offset_y.append(offset_y)
+            self.offset_x.append(offset_x.to(device))
+            self.offset_y.append(offset_y.to(device))
 
     def set_anchor_boxes(self, anchor_boxes: Tensor) -> None:
         """Set prior anchor boxes
@@ -215,7 +215,8 @@ class YoloContext:
             Tensor: the output tensor
         """
 
-        return torch.log(x / (1 - x))
+        # Use clamp to prevent edge cases
+        return torch.log(torch.clamp(x / (1 - x), 1e-8, 1 - 1e-8))
 
     def encode_bounding_box(
         self,
@@ -244,5 +245,6 @@ class YoloContext:
                 self.sigmoid_inverse(boxes[:, :, :, :, 1] * size - offset_y),
                 torch.log(boxes[:, :, :, :, 2] / anchor[:, 0]),
                 torch.log(boxes[:, :, :, :, 3] / anchor[:, 1]),
-            ]
+            ],
+            4,
         )

@@ -36,17 +36,17 @@ class ResNetBackbone(Module):
                 Conv2d(512, 256, 1),
                 BatchNorm2d(256),
                 LeakyReLU(0.1),
-            ),
+            ).cuda(),
             Sequential(
                 Conv2d(1024, 512, 1),
                 BatchNorm2d(512),
                 LeakyReLU(0.1),
-            ),
+            ).cuda(),
             Sequential(
                 Conv2d(2048, 1024, 1),
                 BatchNorm2d(1024),
                 LeakyReLU(0.1),
-            ),
+            ).cuda(),
         ]
 
         for parameter in self.backbone.parameters():

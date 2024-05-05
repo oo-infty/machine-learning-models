@@ -4,9 +4,7 @@ import torch
 from torchvision.transforms.v2 import Transform, Compose
 from torchvision.transforms.v2 import (
     RandomPhotometricDistort,
-    RandomResizedCrop,
     RandomHorizontalFlip,
-    SanitizeBoundingBoxes,
     Resize,
 )
 from torchvision.transforms.v2 import Normalize, ToDtype, ToImage
@@ -59,8 +57,7 @@ class ImageTrainingTransform(Transform):
                 ToImage(),
                 RandomPhotometricDistort(p=1),
                 RandomHorizontalFlip(),
-                RandomResizedCrop((416, 416)),
-                SanitizeBoundingBoxes(labels_getter=lambda d: d[1]["boxes"]),
+                Resize((416, 416)),
             ]
         )
 
