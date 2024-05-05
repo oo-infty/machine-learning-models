@@ -79,7 +79,7 @@ class YoloContext:
         """
 
         self.anchor_boxes = anchor_boxes
-        
+
     def get_offset(
         self,
         device: str,

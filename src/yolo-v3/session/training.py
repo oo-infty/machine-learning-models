@@ -25,7 +25,7 @@ class ClusterResult(NamedTuple):
 
 class TrainingSession:
     """YOLO v3 training session
-    
+
     Args:
         device (str): where to run the model
         context (YoloContext): the model context
@@ -62,7 +62,12 @@ class TrainingSession:
 
         if self.context.anchor_boxes is None:
             print("  Loading bounding boxes")
-            boxes = torch.cat([torch.cat([t["boxes"].to(self.device) for t in target]) for _, target in self.training_loader])
+            boxes = torch.cat(
+                [
+                    torch.cat([t["boxes"].to(self.device) for t in target])
+                    for _, target in self.training_loader
+                ]
+            )
             boxes = boxes[:, 2:4] - boxes[:, 0:2]
 
             print("  Clustering bounding boxes")

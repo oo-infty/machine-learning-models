@@ -81,7 +81,7 @@ class KMeans(Module):
         num_cluster: int,
     ) -> bool:
         """Implementation of finding the cluster centers of input. Note that this
-        may fail due to occurance of NaN 
+        may fail due to occurance of NaN
 
         Args:
             input (Tensor): the input tensor
