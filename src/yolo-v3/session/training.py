@@ -84,6 +84,15 @@ class TrainingSession:
                 torch.save(self.model_path, f"{self.model_path}/yolo.pth")
 
     def setup_cluster(self, use_cache: bool = True) -> ClusterResult:
+        """Run clustering algorithm on all target bounding boxes
+        
+        Args:
+            use_cache (bool): load cluster result from a file
+
+        Returns:
+            ClusterResult: the result
+        """
+
         print("Setup cluster")
         cluster_path = f"{self.model_path}/anchor-boxes-cluster.pth"
 
@@ -188,6 +197,12 @@ class TrainingSession:
         )
 
     def training_epoch(self, optimizer: Optimizer) -> None:
+        """Train loop on one epoch
+
+        Args:
+            optimizer (Optimizer): optimizer used to minimize the loss
+        """
+
         if self.anchor_boxes_cluster is None:
             raise ValueError("self.anchor_boxes_cluster is None")
 
@@ -217,6 +232,8 @@ class TrainingSession:
         print(f"  Training Loss: {total_loss / length}")
 
     def validation_epoch(self) -> None:
+        """Validation loop on one epoch"""
+
         if self.anchor_boxes_cluster is None:
             raise ValueError("self.anchor_boxes_cluster is None")
 
