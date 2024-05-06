@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any
+from typing import Callable, Any
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import VOCDetection
@@ -17,8 +17,8 @@ class CustomVOCDetection(Dataset):
         self,
         root: str,
         image_set: str,
-        image_transforms: Optional[Callable] = None,
-        data_transforms: Optional[Callable] = None,
+        image_transforms: Callable | None = None,
+        data_transforms: Callable | None = None,
         *,
         enable_target_transform: bool = True,
         size: int,
@@ -75,8 +75,8 @@ class CustomVOCDetection(Dataset):
 
 def voc_detection_dataset(
     image_set: str,
-    image_transforms: Optional[Callable] = None,
-    data_transforms: Optional[Callable] = None,
+    image_transforms: Callable | None = None,
+    data_transforms: Callable | None = None,
     *,
     enable_target_transform: bool = True,
     size: int,

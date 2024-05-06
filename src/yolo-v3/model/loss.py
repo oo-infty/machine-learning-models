@@ -81,7 +81,6 @@ class YoloLoss(Module):
         Returns:
             Tensor: the loss
         """
-        import torch
 
         loss = Tensor([0.0]).to(self.device)
         batch_size = input.boxes.shape[0]
@@ -95,10 +94,6 @@ class YoloLoss(Module):
         loss += self.weight.coord * mse_func(
             input.boxes[indicator_obj], target.boxes[indicator_obj]
         )
-        if loss == torch.inf:
-            print("--------", input.boxes[indicator_obj])
-            print("--------", target.boxes[indicator_obj])
-        # print(loss)
 
         # Calculate the loss of confidence
         loss += self.weight.obj * bce_func(
@@ -108,13 +103,9 @@ class YoloLoss(Module):
             input.confidence[indicator_noobj], target.confidence[indicator_noobj]
         )
 
-        # print(loss)
         # Calculate the loss of probilities of classes
         loss += self.weight.obj * bce_func(
             input.classes[indicator_obj], target.classes[indicator_obj]
         )
 
-        # print(loss)
-        # print(batch_size)
-        # exit(0)
         return loss / batch_size

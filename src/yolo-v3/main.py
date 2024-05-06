@@ -18,8 +18,8 @@ session = TrainingSession(
     "output/yolo-v3",
     training_loader,
     validation_loader,
-    2,
-    1e-5,
+    100,
+    5e-3,
     LossWeight(5, 1, 0.1),
 )
 

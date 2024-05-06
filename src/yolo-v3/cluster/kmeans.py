@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable
 
 import torch
 from torch import Tensor
@@ -11,18 +11,18 @@ class KMeans(Module):
     """K-Means algorithm implementation
 
     Args:
-        center (Optional[Tensor]): initial cluster center points
+        center (Tensor | None): initial cluster center points
         dis_func (Callable)
     """
 
     def __init__(
         self,
-        center: Optional[Tensor] = None,
+        center: Tensor | None = None,
         dis_func: Callable[[Tensor, Tensor], Tensor] = SquaredEuclideanDistance(),
     ) -> None:
         super().__init__()
         self.center = center
-        self.num_cluster: Optional[int] = None
+        self.num_cluster: int | None = None
         self.dis_func = dis_func
 
         if self.center is not None:

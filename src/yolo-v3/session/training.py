@@ -4,7 +4,7 @@ import os
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
-from torch.optim import Optimizer, SGD
+from torch.optim import Optimizer, Adam
 from torch.optim.lr_scheduler import StepLR
 from torchvision.ops import box_convert
 
@@ -70,7 +70,7 @@ class TrainingSession:
         if boxes is not None:
             self.context.anchor_boxes = boxes[id_mapping]
 
-        optimizer = SGD(self.context.network.parameters(), self.learning_rate, 0.9)
+        optimizer = Adam(self.context.network.parameters(), self.learning_rate)
         scheduler = StepLR(optimizer, 3, 0.95)
 
         for i in range(1, self.epoch + 1):
@@ -169,7 +169,9 @@ class TrainingSession:
                 current_anchor_box_id = anchor_box_id[current_mask] % num_box
                 current_cxcywh_boxes = cxcywh_boxes[current_mask]
                 current_classes = classes[current_mask]
-                grid_idx = torch.floor(current_cxcywh_boxes[:, 0:2] * size).to(self.device, torch.int)
+                grid_idx = torch.floor(current_cxcywh_boxes[:, 0:2] * size).to(
+                    self.device, torch.int
+                )
 
                 for i, (gx, gy) in enumerate(grid_idx):
                     id = current_anchor_box_id[i]
@@ -205,11 +207,11 @@ class TrainingSession:
             optimizer.step()
             total_loss += loss.item() * batch_size
 
-            if batch % 10 == 0:
+            if (batch + 1) % 10 == 0:
                 current = (batch + 1) * batch_size
                 current_lr = optimizer.state_dict()["param_groups"][0]["lr"]
                 print(
-                    f"  Avg Loss: {total_loss / current:>7f}, Iteration: {current:>5d}/{length:>5d}, Learning Rate: {current_lr}"
+                    f"  Avg Loss: {total_loss / current:>7f}, Iteration: {current:>5d}/{length}, Learning Rate: {current_lr}"
                 )
 
         print(f"  Training Loss: {total_loss / length}")

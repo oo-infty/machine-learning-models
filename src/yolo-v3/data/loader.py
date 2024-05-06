@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any
+from typing import Callable, Any
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -18,16 +18,16 @@ class CustomVOCDetection(Dataset):
     Args:
         root (str): path to store the dataset
         image_set (str): which data split to use
-        image_transform (Optional[Callable]): data augmentation transform
-        data_transform (Optional[Callable]): normalization transform
+        image_transform (Callable | None): data augmentation transform
+        data_transform (Callable | None): normalization transform
     """
 
     def __init__(
         self,
         root: str,
         image_set: str,
-        image_transform: Optional[Callable] = None,
-        data_transform: Optional[Callable] = None,
+        image_transform: Callable | None = None,
+        data_transform: Callable | None = None,
     ) -> None:
         super().__init__()
         self.inner_dataset = VOCDetection(
