@@ -85,7 +85,7 @@ class TrainingSession:
 
     def setup_cluster(self, use_cache: bool = True) -> ClusterResult:
         """Run clustering algorithm on all target bounding boxes
-        
+
         Args:
             use_cache (bool): load cluster result from a file
 

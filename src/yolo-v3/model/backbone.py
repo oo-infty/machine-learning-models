@@ -31,23 +31,21 @@ class ResNetBackbone(Module):
         super().__init__()
 
         self.backbone = resnet101(weights=ResNet101_Weights.DEFAULT)
-        self.adapter = [
-            Sequential(
-                Conv2d(512, 256, 1),
-                BatchNorm2d(256),
-                LeakyReLU(0.1),
-            ).cuda(),
-            Sequential(
-                Conv2d(1024, 512, 1),
-                BatchNorm2d(512),
-                LeakyReLU(0.1),
-            ).cuda(),
-            Sequential(
-                Conv2d(2048, 1024, 1),
-                BatchNorm2d(1024),
-                LeakyReLU(0.1),
-            ).cuda(),
-        ]
+        self.adapter0 = Sequential(
+            Conv2d(512, 256, 1),
+            BatchNorm2d(256),
+            LeakyReLU(0.1),
+        )
+        self.adapter1 = Sequential(
+            Conv2d(1024, 512, 1),
+            BatchNorm2d(512),
+            LeakyReLU(0.1),
+        )
+        self.adapter2 = Sequential(
+            Conv2d(2048, 1024, 1),
+            BatchNorm2d(1024),
+            LeakyReLU(0.1),
+        )
 
         for parameter in self.backbone.parameters():
             parameter.requires_grad = False
@@ -74,19 +72,19 @@ class ResNetBackbone(Module):
         # Input shape (batch, 256, 104, 104)
         x = self.backbone.layer2(x)
         # Input shape (batch, 512, 52, 52)
-        intermediate1 = self.adapter[0](x)
+        intermediate1 = self.adapter0(x)
         # Output shape (batch, 256, 52, 52)
 
         # Input shape (batch, 512, 52, 52)
         x = self.backbone.layer3(x)
         # Input shape (batch, 1024, 26, 26)
-        intermediate2 = self.adapter[1](x)
+        intermediate2 = self.adapter1(x)
         # Output shape (batch, 512, 26, 26)
 
         # Input shape (batch, 1024, 26, 26)
         x = self.backbone.layer4(x)
         # Input shape (batch, 2048, 13, 13)
-        final = self.adapter[2](x)
+        final = self.adapter2(x)
         # Output shape (batch, 1024, 13, 13)
 
         return BackboneResult(intermediate1, intermediate2, final)

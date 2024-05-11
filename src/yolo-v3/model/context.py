@@ -133,13 +133,16 @@ class YoloContext:
     def preprocess_output(
         self,
         output: YoloNetworkResult,
+        *,
         encode_box: bool = False,
+        decode_box: bool = False,
     ) -> ComposedSplitTensorResult:
         """Split the network's output for all feature maps
 
         Args:
             output (YoloNetworkResult): the network's output
-            encode_box (bool): whether to convert the box format
+            encode_box (bool): whether to encode the box format
+            decode_box (bool): whether to decode the box format
 
         Returns:
             ComposedSplitTensorResult: preprocessed output
@@ -153,9 +156,28 @@ class YoloContext:
         if self.anchor_boxes is None:
             raise ValueError("anchor_boxes is None")
 
+        if encode_box and decode_box:
+            raise ValueError("encode_box and decode_box cannot be both True")
+
         if encode_box:
             for i in range(3):
                 boxes = self.encode_bounding_box(
+                    res[i].boxes,
+                    self.offset_x[i],
+                    self.offset_y[i],
+                    self.anchor_boxes[3 * i : 3 * (i + 1)],
+                    self.size[i],
+                )
+
+                res[i] = SplitTensorResult(
+                    boxes=boxes,
+                    confidence=res[i].confidence,
+                    classes=res[i].classes,
+                )
+
+        if decode_box:
+            for i in range(3):
+                boxes = self.decode_bounding_box(
                     res[i].boxes,
                     self.offset_x[i],
                     self.offset_y[i],
