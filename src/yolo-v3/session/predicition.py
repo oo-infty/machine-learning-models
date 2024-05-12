@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import torch
 from torch import Tensor
-from torchvision.ops import batched_nms
+from torchvision.ops import batched_nms, box_convert
 
 from model.context import SplitTensorResult, YoloContext
 from model.network import YoloNetworkResult
@@ -12,14 +12,14 @@ class BoundingBoxContext(NamedTuple):
     """The context of a bounding box including its position, confidence and category
     
     Args:
-        boxes (Tensor): the position and size of a bounding box
-        class_id (Tensor): the corresponding classification result
+        box (Tensor): the position and size of a bounding box
         confidence (Tensor): the corresponding confidence
+        class_id (Tensor): the corresponding classification result
     """
 
-    boxes: Tensor
-    class_id: Tensor
+    box: Tensor
     confidence: Tensor
+    class_id: Tensor
 
 class PredictionResult(NamedTuple):
     """The result of prediction of a single sample
@@ -75,7 +75,7 @@ class PredictionSession:
         """
 
         batch_num = output.small.shape[0]
-        new_output = self.context.preprocess_output(output)
+        new_output = self.context.preprocess_output(output, decode_box=True)
         res = []
 
         for i in range(batch_num):
@@ -135,7 +135,7 @@ class PredictionSession:
 
         for index in indices:
             box = BoundingBoxContext(
-                new_bounding_box[index],
+                box_convert(new_bounding_box[index] * 416, "cxcywh", "xyxy"),
                 new_confidence[index],
                 new_class_id[index],
             )

@@ -3,6 +3,7 @@ from typing import Callable, Any
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import VOCDetection
+from torchvision.transforms.v2 import ToImage
 
 from data.transform import (
     DataTransform,
@@ -43,15 +44,21 @@ class CustomVOCDetection(Dataset):
         return len(self.inner_dataset)
 
     def __getitem__(self, index: int) -> tuple[Any, Any]:
+        raw_img, img, target = self.get(index)
+        return img, target
+
+    def get(self, index: int) -> tuple[Any, Any, Any]:
         img, target = self.inner_dataset[index]
 
         if self.image_transforms is not None:
             img, target = self.image_transforms([img, target])
 
+        raw_img = img
+
         if self.data_transforms is not None:
             img, target = self.data_transforms([img, target])
 
-        return img, target
+        return raw_img, img, target
 
 
 def loader(

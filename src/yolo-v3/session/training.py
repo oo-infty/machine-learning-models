@@ -38,6 +38,7 @@ class TrainingSession:
         epoch (int): number of epoches to run
         learning_rate (float): learning rate passed to optimizer
         weights (LossWeight): weight of the loss function
+        start_epoch (int): number of epoches to be skipped
     """
 
     def __init__(
@@ -50,6 +51,7 @@ class TrainingSession:
         epoch: int,
         learning_rate: float,
         weights: LossWeight,
+        start_epoch: int = 1,
     ) -> None:
         self.device = device
         self.context = context
@@ -60,6 +62,7 @@ class TrainingSession:
         self.learning_rate = learning_rate
         self.criterion = YoloLoss(self.device, self.context, weights)
         self.anchor_boxes_cluster: ClusterResult | None = None
+        self.start_epoch = start_epoch
 
     def run(self) -> None:
         """Main train loop"""
@@ -74,6 +77,11 @@ class TrainingSession:
         scheduler = StepLR(optimizer, 3, 0.95)
 
         for i in range(1, self.epoch + 1):
+            if i < self.start_epoch:
+                scheduler.step()
+                print(f"Epoch #{i} continued")
+                continue
+
             print(f"Epoch #{i}")
             self.training_epoch(optimizer)
             scheduler.step()
@@ -81,7 +89,7 @@ class TrainingSession:
             if i % 10 == 0:
                 print(f"Validation #{i / 10}")
                 self.validation_epoch()
-                torch.save(self.model_path, f"{self.model_path}/yolo.pth")
+                torch.save(self.context, f"{self.model_path}/yolo.pth")
 
     def setup_cluster(self, use_cache: bool = True) -> ClusterResult:
         """Run clustering algorithm on all target bounding boxes

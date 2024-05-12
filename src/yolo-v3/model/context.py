@@ -224,7 +224,8 @@ class YoloContext:
                 (torch.sigmoid(boxes[:, :, :, :, 1]) + offset_y) / size,
                 torch.exp(boxes[:, :, :, :, 2]) * anchor[:, 0],
                 torch.exp(boxes[:, :, :, :, 3]) * anchor[:, 1],
-            ]
+            ],
+            4
         )
 
     def sigmoid_inverse(self, x: Tensor) -> Tensor:
