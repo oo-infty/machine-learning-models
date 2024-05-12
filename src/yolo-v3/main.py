@@ -21,7 +21,7 @@ LOSS_WEIGHT = LossWeight(5, 1, 0.1)
 
 
 def train():
-    context = torch.load("output/yolo-v3/yolo.pth")
+    context = torch.load("checkpoint/yolo-v3/yolo.pth")
 
     training_loader = loader("train", 32)
     validation_loader = loader("trainval", 32)
@@ -42,7 +42,7 @@ def train():
 
 
 def predict():
-    context = torch.load("output/yolo-v3/yolo.pth")
+    context = torch.load("checkpoint/yolo-v3/yolo.pth")
 
     session = PredictionSession(
         DEVICE,

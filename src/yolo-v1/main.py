@@ -6,7 +6,7 @@ from data.plot import plot_output
 from model.context import BackboneType, YoloContext
 from model.session import PredictionSession, TrainingSession
 
-MODEL_PATH = "output/yolo-v1/yolo-resnet.pth"
+MODEL_PATH = "checkpoint/yolo-v1/yolo-resnet.pth"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SIZE = 7

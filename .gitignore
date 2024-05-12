@@ -1,5 +1,5 @@
 data
 __pycache__
-output
+checkpoint
 
 !src/*/data
