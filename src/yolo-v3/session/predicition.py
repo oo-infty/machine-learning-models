@@ -10,7 +10,7 @@ from model.network import YoloNetworkResult
 
 class BoundingBoxContext(NamedTuple):
     """The context of a bounding box including its position, confidence and category
-    
+
     Args:
         box (Tensor): the position and size of a bounding box
         confidence (Tensor): the corresponding confidence
@@ -21,18 +21,20 @@ class BoundingBoxContext(NamedTuple):
     confidence: Tensor
     class_id: Tensor
 
+
 class PredictionResult(NamedTuple):
     """The result of prediction of a single sample
-    
+
     Args:
         boxes (list[BoundingBoxContext]): all potential boxes and relevant information
     """
 
     boxes: list[BoundingBoxContext]
 
+
 class PredictionSession:
     """YOLO v3 prediction session
-    
+
     Args:
         device (str): where to run the model
         context (YoloContext): the model context
@@ -85,7 +87,7 @@ class PredictionSession:
                     new_output.intermediate.boxes[i].reshape(-1, 4),
                     new_output.large.boxes[i].reshape(-1, 4),
                 ],
-                0
+                0,
             )
             confidence = torch.cat(
                 [
@@ -97,10 +99,12 @@ class PredictionSession:
             classes = torch.cat(
                 [
                     new_output.small.classes[i].reshape(-1, self.context.num_class),
-                    new_output.intermediate.classes[i].reshape(-1, self.context.num_class),
+                    new_output.intermediate.classes[i].reshape(
+                        -1, self.context.num_class
+                    ),
                     new_output.large.classes[i].reshape(-1, self.context.num_class),
                 ],
-                0
+                0,
             )
             sample_output = SplitTensorResult(boxes, confidence, classes)
             res.append(self.process_impl(sample_output))

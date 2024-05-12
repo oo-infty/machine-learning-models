@@ -225,7 +225,7 @@ class YoloContext:
                 torch.exp(boxes[:, :, :, :, 2]) * anchor[:, 0],
                 torch.exp(boxes[:, :, :, :, 3]) * anchor[:, 1],
             ],
-            4
+            4,
         )
 
     def sigmoid_inverse(self, x: Tensor) -> Tensor:

@@ -19,12 +19,13 @@ EPOCH = 200
 LEARNING_RATE = 5e-6
 LOSS_WEIGHT = LossWeight(5, 1, 0.1)
 
+
 def train():
     context = torch.load("output/yolo-v3/yolo.pth")
-    
+
     training_loader = loader("train", 32)
     validation_loader = loader("trainval", 32)
-    
+
     session = TrainingSession(
         DEVICE,
         context,
@@ -36,7 +37,7 @@ def train():
         LOSS_WEIGHT,
         start_epoch=91,
     )
-    
+
     session.run()
 
 
@@ -59,6 +60,7 @@ def predict():
     image, sample, target = testing_dataset.get(idx)
     output = session.run(sample.unsqueeze(0))[0]
     plot_output(image, output)
+
 
 def plot_output(img: Tensor, output: PredictionResult) -> None:
     labels = []
@@ -84,6 +86,7 @@ def plot_output(img: Tensor, output: PredictionResult) -> None:
     ax.axis(False)
     ax.imshow(img.permute(1, 2, 0).squeeze())
     plt.show()
+
 
 # train()
 predict()
