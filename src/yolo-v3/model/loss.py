@@ -96,15 +96,15 @@ class YoloLoss(Module):
         )
 
         # Calculate the loss of confidence
-        loss += self.weight.obj * bce_func(
+        loss += self.weight.obj * mse_func(
             input.confidence[indicator_obj], target.confidence[indicator_obj]
         )
-        loss += self.weight.noobj * bce_func(
+        loss += self.weight.noobj * mse_func(
             input.confidence[indicator_noobj], target.confidence[indicator_noobj]
         )
 
         # Calculate the loss of probilities of classes
-        loss += self.weight.obj * bce_func(
+        loss += self.weight.obj * mse_func(
             input.classes[indicator_obj], target.classes[indicator_obj]
         )
 
