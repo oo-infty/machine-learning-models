@@ -266,8 +266,8 @@ class YoloContext:
             [
                 self.sigmoid_inverse(boxes[:, :, :, :, 0] * size - offset_x),
                 self.sigmoid_inverse(boxes[:, :, :, :, 1] * size - offset_y),
-                torch.log(boxes[:, :, :, :, 2] / anchor[:, 0]),
-                torch.log(boxes[:, :, :, :, 3] / anchor[:, 1]),
+                torch.log(torch.clamp_min(boxes[:, :, :, :, 2] / anchor[:, 0], 1e-8)),
+                torch.log(torch.clamp_min(boxes[:, :, :, :, 3] / anchor[:, 1], 1e-8)),
             ],
             4,
         )

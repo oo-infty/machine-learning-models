@@ -74,7 +74,7 @@ class TrainingSession:
             self.context.anchor_boxes = boxes[id_mapping]
 
         optimizer = Adam(self.context.network.parameters(), self.learning_rate)
-        scheduler = StepLR(optimizer, 3, 0.95)
+        scheduler = StepLR(optimizer, 3, 0.9)
 
         for i in range(1, self.epoch + 1):
             if i < self.start_epoch:
@@ -85,11 +85,11 @@ class TrainingSession:
             print(f"Epoch #{i}")
             self.training_epoch(optimizer)
             scheduler.step()
+            torch.save(self.context, f"{self.model_path}/yolo.pth")
 
             if i % 10 == 0:
                 print(f"Validation #{i / 10}")
                 self.validation_epoch()
-                torch.save(self.context, f"{self.model_path}/yolo.pth")
 
     def setup_cluster(self, use_cache: bool = True) -> ClusterResult:
         """Run clustering algorithm on all target bounding boxes
@@ -165,9 +165,6 @@ class TrainingSession:
             # Size corresponds to different feature maps
             s = int(size.item())
             tensor = torch.zeros((batch_size, s, s, num_box, 5 + num_class))
-            # Prevent log(0) in encode_bounding_box()
-            tensor[..., 0:2] = 0.5
-            tensor[..., 2:4] = 0.8
             target_tensors.append(tensor)
 
         for batch_index, target in enumerate(target_list):

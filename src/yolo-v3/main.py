@@ -16,16 +16,21 @@ NUM_BOX = 3
 NUM_CLASS = 20
 
 EPOCH = 200
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-5
 LOSS_WEIGHT = LossWeight(5, 1, 0.1)
 
 
-def train():
-    context = YoloContext(
-        DEVICE,
-        NUM_BOX,
-        NUM_CLASS,
-    )
+def train(start_epoch: int = 1):
+    context: YoloContext
+
+    if start_epoch == 1:
+        context = YoloContext(
+            DEVICE,
+            NUM_BOX,
+            NUM_CLASS,
+        )
+    else:
+        context = torch.load("checkpoint/yolo-v3/yolo.pth")
 
     training_loader = loader("train", 32)
     validation_loader = loader("trainval", 32)
@@ -39,6 +44,7 @@ def train():
         EPOCH,
         LEARNING_RATE,
         LOSS_WEIGHT,
+        start_epoch,
     )
 
     session.run()
@@ -91,5 +97,5 @@ def plot_output(img: Tensor, output: PredictionResult) -> None:
     plt.show()
 
 
-train()
+train(11)
 # predict()
