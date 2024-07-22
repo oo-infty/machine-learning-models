@@ -94,18 +94,24 @@ class YoloLoss(Module):
         loss += self.weight.coord * mse_func(
             input.boxes[indicator_obj], target.boxes[indicator_obj]
         )
+        # print(input.boxes[indicator_obj])
+        # print(target.boxes[indicator_obj])
 
         # Calculate the loss of confidence
-        loss += self.weight.obj * mse_func(
+        loss += self.weight.obj * bce_func(
             input.confidence[indicator_obj], target.confidence[indicator_obj]
         )
-        loss += self.weight.noobj * mse_func(
+        # print(loss)
+        loss += self.weight.noobj * bce_func(
             input.confidence[indicator_noobj], target.confidence[indicator_noobj]
         )
 
+        # print(loss)
         # Calculate the loss of probilities of classes
-        loss += self.weight.obj * mse_func(
+        loss += self.weight.obj * bce_func(
             input.classes[indicator_obj], target.classes[indicator_obj]
         )
+        # print(loss)
+        # exit(0)
 
         return loss / batch_size

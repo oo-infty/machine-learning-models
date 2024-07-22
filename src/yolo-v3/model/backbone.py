@@ -47,8 +47,8 @@ class ResNetBackbone(Module):
             LeakyReLU(0.1),
         )
 
-        for parameter in self.backbone.parameters():
-            parameter.requires_grad = False
+        # for parameter in self.backbone.parameters():
+        #     parameter.requires_grad = False
 
     def forward(self, x: Tensor) -> BackboneResult:
         """Extract features from the input tensor

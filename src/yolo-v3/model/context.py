@@ -239,7 +239,8 @@ class YoloContext:
         """
 
         # Use clamp to prevent edge cases
-        return torch.log(torch.clamp(x / (1 - x), 1e-8, 1 - 1e-8))
+        x = torch.clamp(x, 1e-12, 1 - 1e-12)
+        return torch.log(x / (1 - x))
 
     def encode_bounding_box(
         self,
@@ -266,8 +267,8 @@ class YoloContext:
             [
                 self.sigmoid_inverse(boxes[:, :, :, :, 0] * size - offset_x),
                 self.sigmoid_inverse(boxes[:, :, :, :, 1] * size - offset_y),
-                torch.log(torch.clamp_min(boxes[:, :, :, :, 2] / anchor[:, 0], 1e-8)),
-                torch.log(torch.clamp_min(boxes[:, :, :, :, 3] / anchor[:, 1], 1e-8)),
+                torch.log(torch.clamp_min(boxes[:, :, :, :, 2] / anchor[:, 0], 1e-12)),
+                torch.log(torch.clamp_min(boxes[:, :, :, :, 3] / anchor[:, 1], 1e-12)),
             ],
             4,
         )

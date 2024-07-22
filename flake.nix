@@ -19,6 +19,10 @@
             python311Packages.numpy
             python311Packages.pandas
             python311Packages.matplotlib
+            python311Packages.pillow
+            python311Packages.opencv4
+            python311Packages.tqdm
+            python311Packages.albumentations
             python311Packages.black
             nodePackages.pyright
             ruff

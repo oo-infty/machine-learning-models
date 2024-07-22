@@ -4,7 +4,7 @@ import os
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
-from torch.optim import Optimizer, Adam
+from torch.optim import Optimizer, Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from torchvision.ops import box_convert
 
@@ -12,18 +12,6 @@ from model.network import YoloNetworkResult
 from model.context import YoloContext
 from model.loss import YoloLoss, LossWeight
 from cluster.kmeans import KMeans
-
-
-class ClusterResult(NamedTuple):
-    """K Means algorithm result
-
-    Args:
-        cluster (KMeans): K Means algorithm context
-        id_mapping (Tensor): mapping from cluster ID to sorted ID
-    """
-
-    cluster: KMeans
-    id_mapping: Tensor
 
 
 class TrainingSession:
@@ -50,6 +38,7 @@ class TrainingSession:
         validation_loader: DataLoader,
         epoch: int,
         learning_rate: float,
+        ignore_threshold: float,
         weights: LossWeight,
         start_epoch: int = 1,
     ) -> None:
@@ -61,19 +50,17 @@ class TrainingSession:
         self.epoch = epoch
         self.learning_rate = learning_rate
         self.criterion = YoloLoss(self.device, self.context, weights)
-        self.anchor_boxes_cluster: ClusterResult | None = None
+        self.ignore_threshold = ignore_threshold
+        self.anchor_boxes_cluster: KMeans | None = None
         self.start_epoch = start_epoch
 
     def run(self) -> None:
         """Main train loop"""
 
         self.anchor_boxes_cluster = self.setup_cluster()
-        boxes = self.anchor_boxes_cluster.cluster.center
-        id_mapping = self.anchor_boxes_cluster.id_mapping
-        if boxes is not None:
-            self.context.anchor_boxes = boxes[id_mapping]
+        self.context.anchor_boxes = self.anchor_boxes_cluster.center
 
-        optimizer = Adam(self.context.network.parameters(), self.learning_rate)
+        optimizer = SGD(self.context.network.parameters(), self.learning_rate)
         scheduler = StepLR(optimizer, 3, 0.9)
 
         for i in range(1, self.epoch + 1):
@@ -91,7 +78,7 @@ class TrainingSession:
                 print(f"Validation #{i / 10}")
                 self.validation_epoch()
 
-    def setup_cluster(self, use_cache: bool = True) -> ClusterResult:
+    def setup_cluster(self) -> KMeans:
         """Run clustering algorithm on all target bounding boxes
 
         Args:
@@ -101,47 +88,26 @@ class TrainingSession:
             ClusterResult: the result
         """
 
-        print("Setup cluster")
-        cluster_path = f"{self.model_path}/anchor-boxes-cluster.pth"
-
-        if use_cache and os.path.exists(cluster_path):
-            print("  Use cached cluster")
-            return torch.load(cluster_path)
-        else:
-            print("  Loading bounding boxes")
-            boxes = torch.cat(
-                [
-                    torch.cat([t["boxes"].to(self.device) for t in target])
-                    for _, target in self.training_loader
-                ]
-            )
-            boxes = boxes[:, 2:4] - boxes[:, 0:2]
-
-            print("  Clustering bounding boxes")
-            kmeans = KMeans()
-            kmeans.cluster(boxes, 9)
-
-            print("  Processing anchor boxes")
-
-            if kmeans.center is None:
-                raise ValueError("kmeans.center is None")
-
-            anchor_boxes = kmeans.center
-
-            area = anchor_boxes[:, 0] * anchor_boxes[:, 1]
-            # A bigger bounding box is corresponded to a smaller feature map
-            indices = torch.argsort(area, descending=True)
-            mapping = torch.zeros(9, dtype=torch.int)
-            mapping[indices] = torch.arange(9, dtype=torch.int)
-
-            cluster_res = ClusterResult(kmeans, mapping)
-            torch.save(cluster_res, cluster_path)
-            return cluster_res
+        center = Tensor(
+            [
+                [116, 90],
+                [156, 198],
+                [373, 326],
+                [30, 61],
+                [62, 45],
+                [59, 119],
+                [10, 13],
+                [16, 30],
+                [33, 23],
+            ],
+        ).to(self.device)
+        kmeans = KMeans(center).to(self.device)
+        return kmeans
 
     def preprocess_target(
         self,
         target_list: list[dict[str, Any]],
-        anchor_boxes_cluster: ClusterResult,
+        anchor_boxes_cluster: KMeans,
     ) -> YoloNetworkResult:
         """Convert target dictionaries to a tensor
 
@@ -154,8 +120,7 @@ class TrainingSession:
         """
 
         # Initialize the result
-        cluster = anchor_boxes_cluster.cluster.to(self.device)
-        id_mapping = anchor_boxes_cluster.id_mapping.to(self.device)
+        cluster = anchor_boxes_cluster.to(self.device)
         batch_size = len(target_list)
         num_box = self.context.num_box
         num_class = self.context.num_class
@@ -170,30 +135,50 @@ class TrainingSession:
         for batch_index, target in enumerate(target_list):
             # Assign an anchor box type to each bounding box
             boxes = target["boxes"].reshape(-1, 4).to(self.device)
-            cluster_id = cluster(boxes[:, 2:4] - boxes[:, 0:2]).to(self.device)
-            anchor_box_id = id_mapping[cluster_id]
+            cluster_score = cluster(boxes[:, 2:4] - boxes[:, 0:2]).to(self.device)
+            cluster_id = cluster_score.argmax(1)
             cxcywh_boxes = box_convert(boxes / 416, "xyxy", "cxcywh")
             classes = Tensor(target["classes"]).to(self.device, torch.int)
 
-            for k in range(3):
-                # Store ground truth information to different tensors according to
-                # bounding box's size and feature map's size
-                size = self.context.size[k]
-                current_mask = anchor_box_id // num_box == k
-                current_anchor_box_id = anchor_box_id[current_mask] % num_box
-                current_cxcywh_boxes = cxcywh_boxes[current_mask]
-                current_classes = classes[current_mask]
-                grid_idx = torch.floor(current_cxcywh_boxes[:, 0:2] * size).to(
-                    self.device, torch.int
-                )
+            for k in range(3 * num_box):
+                size = self.context.size[k // 3]
 
-                for i, (gx, gy) in enumerate(grid_idx):
-                    id = current_anchor_box_id[i]
-                    value = torch.zeros(5 + num_class)
-                    value[0:4] = current_cxcywh_boxes[i]
-                    value[4] = 1
-                    value[5 + current_classes[i]] = 1
-                    target_tensors[k][batch_index, gx, gy, id] = value
+                for i in range(len(boxes)):
+                    if k == cluster_id[i]:
+                        value = torch.zeros(5 + num_class)
+                        gx = torch.floor(cxcywh_boxes[i, 0] * size).to(torch.int)
+                        gy = torch.floor(cxcywh_boxes[i, 1] * size).to(torch.int)
+                        value[0:4] = cxcywh_boxes[i, 0:4]
+                        value[4] = 1
+                        value[5 + classes[i]] = 1
+                        target_tensors[k // 3][batch_index, gx, gy, k % 3] = value
+                        # print(f"original box = {cxcywh_boxes[i]}, ({gx.item()}, {gy.item()}, {value[0].item()}, {value[1].item()})")
+                    elif cluster_score[i, k] > self.ignore_threshold:
+                        value = torch.zeros(5 + num_class)
+                        gx = torch.floor(cxcywh_boxes[i, 0] * size).to(torch.int)
+                        gy = torch.floor(cxcywh_boxes[i, 1] * size).to(torch.int)
+                        value[4] = 0.5
+                        target_tensors[k // 3][batch_index, gx, gy, k % 3] = value
+
+            # for k in range(3):
+            #     # Store ground truth information to different tensors according to
+            #     # bounding box's size and feature map's size
+            #     size = self.context.size[k]
+            #     current_mask = anchor_box_id // num_box == k
+            #     current_anchor_box_id = anchor_box_id[current_mask] % num_box
+            #     current_cxcywh_boxes = cxcywh_boxes[current_mask]
+            #     current_classes = classes[current_mask]
+            #     grid_idx = torch.floor(current_cxcywh_boxes[:, 0:2] * size).to(
+            #         self.device, torch.int
+            #     )
+
+            #     for i, (gx, gy) in enumerate(grid_idx):
+            #         id = current_anchor_box_id[i]
+            #         value = torch.zeros(5 + num_class)
+            #         value[0:4] = current_cxcywh_boxes[i]
+            #         value[4] = 1
+            #         value[5 + current_classes[i]] = 1
+            #         target_tensors[k][batch_index, gx, gy, id] = value
 
         return YoloNetworkResult(
             small=target_tensors[0].to(self.device),

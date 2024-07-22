@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn import Module
 
-from cluster.distance import SquaredEuclideanDistance
+from cluster.distance import IouDistance, SquaredEuclideanDistance
 
 
 class KMeans(Module):
@@ -18,7 +18,7 @@ class KMeans(Module):
     def __init__(
         self,
         center: Tensor | None = None,
-        dis_func: Callable[[Tensor, Tensor], Tensor] = SquaredEuclideanDistance(),
+        dis_func: Callable[[Tensor, Tensor], Tensor] = IouDistance(),
     ) -> None:
         super().__init__()
         self.center = center
@@ -55,7 +55,7 @@ class KMeans(Module):
         assert self.center is not None
         assert self.center.shape[1:] == input.shape[1:]
 
-        return self.dis_func(input, self.center).argmin(1)
+        return self.dis_func(input, self.center)
 
     def cluster(
         self,

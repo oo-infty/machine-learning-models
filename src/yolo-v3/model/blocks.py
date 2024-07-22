@@ -76,7 +76,7 @@ class YoloBlockStack(Module):
             YoloBlock(
                 in_channels,
                 out_channels,
-                kernel_size,
+                1,
                 inplace,
             ),
         )
@@ -85,9 +85,9 @@ class YoloBlockStack(Module):
             self.layers.add_module(
                 f"block{i}",
                 YoloBlock(
-                    out_channels,
-                    out_channels,
-                    kernel_size,
+                    out_channels if i % 2 == 0 else out_channels // 4,
+                    out_channels if i % 2 == 1 else out_channels // 4,
+                    kernel_size if i % 2 == 1 else 1,
                     inplace,
                 ),
             )
