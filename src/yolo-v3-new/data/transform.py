@@ -12,6 +12,7 @@ def train_transforms(image_size: int) -> alb.Compose:
             min_height=int(image_size * scale),
             min_width=int(image_size * scale),
             border_mode=cv2.BORDER_CONSTANT,
+            value=127,
         ),
         alb.RandomCrop(width=image_size, height=image_size),
         alb.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4),
@@ -48,7 +49,10 @@ def test_transforms(image_size: int) -> alb.Compose:
     [
         alb.LongestMaxSize(max_size=image_size),
         alb.PadIfNeeded(
-            min_height=image_size, min_width=image_size, border_mode=cv2.BORDER_CONSTANT
+            min_height=image_size,
+            min_width=image_size,
+            border_mode=cv2.BORDER_CONSTANT,
+            value=127,
         ),
         alb.Normalize(
             mean=[0, 0, 0],
